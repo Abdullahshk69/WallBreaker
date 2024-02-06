@@ -40,6 +40,7 @@ Collecting them by the player, will activate the reward.
 
 void WallBreaker::Main()
 {
+	
 	InitWindow(screenWidth, screenHeight, "Wall Breaker");
 
 	Start();
@@ -92,6 +93,9 @@ void WallBreaker::EvalCurFrame()
 	// Life powerup position
 	LifeMovement();
 
+	// Cheat powerup position
+	CheatMovement();
+
 
 	// Collision with the Bricks
 	CollisionWithBricks();
@@ -104,6 +108,13 @@ void WallBreaker::EvalCurFrame()
 
 	// Collision with the Life Powerup
 	CollisionWithLife();
+
+	// Collision with the Cheat Powerup
+	CollisionWithCheat();
+
+
+	// Timers
+	TimerCheatPowerUp();
 
 	// Check whether a player won or lost
 	EndScenario();
@@ -144,9 +155,14 @@ void WallBreaker::DrawCurFrame()
 			b.DrawHitBoxes();
 		}
 
-		for (LifePickUp l : life)
+		for (LifePickUp l : lives)
 		{
 			l.Draw();
+		}
+
+		for (CheatPowerUp c : cheats)
+		{
+			c.Draw();
 		}
 
 		// draw player lives!
@@ -218,10 +234,19 @@ void WallBreaker::LevelGeneration()
 
 void WallBreaker::LifeMovement()
 {
-	for (int i = 0; i < life.size(); i++)
+	for (int i = 0; i < lives.size(); i++)
 	{
-		life[i].position.x += life[i].speed.x;
-		life[i].position.y += life[i].speed.y;
+		lives[i].position.x += lives[i].speed.x;
+		lives[i].position.y += lives[i].speed.y;
+	}
+}
+
+void WallBreaker::CheatMovement()
+{
+	for (int i = 0; i < cheats.size(); i++)
+	{
+		cheats[i].position.x += cheats[i].speed.x;
+		cheats[i].position.y += cheats[i].speed.y;
 	}
 }
 
@@ -281,24 +306,39 @@ void WallBreaker::BallMovement()
 	}
 }
 
-void WallBreaker::TimerGoThrough()
+void WallBreaker::TimerCheatPowerUp()
 {
 	if (player.statusAffect.hasGoThrough)
 	{
-		player.statusAffect.goThroughTimerCounter++;
+		player.statusAffect.goThroughTimerCounter += GetFrameTime();
+
+		char buf[8];
+		sprintf_s(buf, "%d", int(player.statusAffect.goThroughTimer - player.statusAffect.goThroughTimerCounter + 1));
+		DrawText(buf, screenWidth - 100, screenHeight - 100, 12, BLUE);
 		if (player.statusAffect.goThroughTimerCounter >= player.statusAffect.goThroughTimer)
 		{
 			player.statusAffect.hasGoThrough = false;
+			player.statusAffect.goThroughTimerCounter = 0.0;
 		}
 	}
 }
 
-void WallBreaker::SpawnLife(Vector2 position)
+void WallBreaker::SpawnPowerUp(Vector2 position)
 {
 	if (rand() % 100 > 75)
-	{
-		life.push_back(LifePickUp{ position, POWERUP_SPEED, 10, YELLOW });
-	}
+		SpawnLife(position);
+	else if (rand() % 100 < 75)
+		SpawnCheat(position);
+}
+
+void WallBreaker::SpawnLife(Vector2 position)
+{
+	lives.push_back(LifePickUp{ position, POWERUP_SPEED, 10, YELLOW });
+}
+
+void WallBreaker::SpawnCheat(Vector2 position)
+{
+	cheats.push_back(CheatPowerUp{ position, POWERUP_SPEED, 10, BLUE });
 }
 
 void WallBreaker::CollisionWithBricks()
@@ -307,7 +347,7 @@ void WallBreaker::CollisionWithBricks()
 	{
 		if (CheckCollisionCircleRec(ball.position, ball.radius, bricks[i].rect))
 		{
-			SpawnLife(Vector2{ bricks[i].rect.x, bricks[i].rect.y });
+			SpawnPowerUp(Vector2{ bricks[i].rect.x, bricks[i].rect.y });
 			int scenario = CollisionWithHitBox(bricks[i]);
 
 			Vector2 hitBoxesPositions[8]{};
@@ -335,7 +375,7 @@ void WallBreaker::CollisionWithBricks()
 					break;
 
 				case topRightCorner:
-					if (ball.prevPosition.x > hitBoxesPositions[topRightCorner].x)
+					if (ball.prevPosition.x > hitBoxesPositions[topRightCorner].x + (brickSize.x/ 10))
 					{
 						ball.speed.x *= -1;
 					}
@@ -351,18 +391,18 @@ void WallBreaker::CollisionWithBricks()
 						ball.speed.x *= -1;
 					}
 
-					if (ball.prevPosition.y > hitBoxesPositions[botLeftCorner].y)
+					if (ball.prevPosition.y > hitBoxesPositions[botLeftCorner].y + (brickSize.y/10))
 						ball.speed.y *= -1;
 
 					break;
 
 				case botRightCorner:
-					if (ball.prevPosition.x > hitBoxesPositions[botRightCorner].x)
+					if (ball.prevPosition.x > hitBoxesPositions[botRightCorner].x + (brickSize.x/10))
 					{
 						ball.speed.x *= -1;
 					}
 
-					if (ball.prevPosition.y > hitBoxesPositions[botRightCorner].y)
+					if (ball.prevPosition.y > hitBoxesPositions[botRightCorner].y + (brickSize.y / 10))
 						ball.speed.y *= -1;
 
 					break;
@@ -422,14 +462,31 @@ void WallBreaker::CollisionWithWalls()
 
 void WallBreaker::CollisionWithLife()
 {
-	for (int i = 0; i < life.size(); i++)
+	for (int i = 0; i < lives.size(); i++)
 	{
-		if (CheckCollisionCircleRec(life[i].position, life[i].radius, player.GetRect()))
+		if (CheckCollisionCircleRec(lives[i].position, lives[i].radius, player.GetRect()))
 		{
-			life.erase(life.begin() + i);
+			lives.erase(lives.begin() + i);
 			// Max 5 lives
 			player.curLife = std::min(player.curLife + 1, 5);
 		}
+		else if (lives[i].position.y + lives[i].radius >= screenHeight)
+			lives.erase(lives.begin() + i);
+	}
+}
+
+void WallBreaker::CollisionWithCheat()
+{
+	for (int i = 0; i < cheats.size(); i++)
+	{
+		if (CheckCollisionCircleRec(cheats[i].position, cheats[i].radius, player.GetRect()))
+		{
+			cheats.erase(cheats.begin() + i);
+			// Max 5 lives
+			player.statusAffect.hasGoThrough = true;
+		}
+		else if(cheats[i].position.y+cheats[i].radius >= screenHeight)
+			cheats.erase(cheats.begin() + i);
 	}
 }
 

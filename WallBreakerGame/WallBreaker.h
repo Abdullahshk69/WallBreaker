@@ -27,8 +27,8 @@ public:
 
 	typedef struct StatusAffect {
 		bool hasGoThrough = false;
-		int goThroughTimer = 5;
-		int goThroughTimerCounter = 0;
+		float goThroughTimer = 5.0;
+		float goThroughTimerCounter = 0.0;
 	};
 
 	typedef struct Player {
@@ -115,7 +115,8 @@ public:
 	Color colors[ROWS_OF_BRICKS] = { RED, PURPLE, ORANGE, BLUE, GREEN };
 
 	std::vector<Brick> bricks;
-	std::vector<LifePickUp> life;
+	std::vector<LifePickUp> lives;
+	std::vector<CheatPowerUp> cheats;
 	
 
 	Player player = { 0 };
@@ -141,17 +142,25 @@ public:
 
 	// Additional Functions
 	void LevelGeneration();
-	void LifeMovement();
+
+	// Movements
 	void PlayerMovement();
 	void BallMovement();
+	void LifeMovement();
+	void CheatMovement();
 
-	void TimerGoThrough();
+	// PowerUps
+	void TimerCheatPowerUp();
+	void SpawnPowerUp(Vector2 position);
 	void SpawnLife(Vector2 position);
+	void SpawnCheat(Vector2 position);
 
+	// Collisions
 	void CollisionWithBricks();
 	void CollisionWithPedal();
 	void CollisionWithWalls();
 	void CollisionWithLife();
+	void CollisionWithCheat();
 	int CollisionWithHitBox(Brick brick);
 
 	void EndScenario();
