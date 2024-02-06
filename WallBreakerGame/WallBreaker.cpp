@@ -83,26 +83,26 @@ void WallBreaker::EvalCurFrame()
 
 	if (gamePaused) return;
 
+	// Ball position
 	BallMovement();
 
-
-	// player position
+	// Player position
 	PlayerMovement();
 
+	// Life powerup position
 	LifeMovement();
 
 
 	// Collision with the Bricks
 	CollisionWithBricks();
 
-
 	// Colision with the pedal
 	CollisionWithPedal();
-
 
 	// collision with the walls
 	CollisionWithWalls();
 
+	// Collision with the Life Powerup
 	CollisionWithLife();
 
 	// Check whether a player won or lost
@@ -136,7 +136,7 @@ void WallBreaker::DrawCurFrame()
 	{
 		player.Draw();
 		ball.Draw();
-		
+
 
 		for (Brick b : bricks)
 		{
@@ -144,7 +144,7 @@ void WallBreaker::DrawCurFrame()
 			b.DrawHitBoxes();
 		}
 
-		for (LifePickUp l: life)
+		for (LifePickUp l : life)
 		{
 			l.Draw();
 		}
@@ -281,11 +281,23 @@ void WallBreaker::BallMovement()
 	}
 }
 
+void WallBreaker::TimerGoThrough()
+{
+	if (player.statusAffect.hasGoThrough)
+	{
+		player.statusAffect.goThroughTimerCounter++;
+		if (player.statusAffect.goThroughTimerCounter >= player.statusAffect.goThroughTimer)
+		{
+			player.statusAffect.hasGoThrough = false;
+		}
+	}
+}
+
 void WallBreaker::SpawnLife(Vector2 position)
 {
 	if (rand() % 100 > 75)
 	{
-		life.push_back(LifePickUp{ position, LIFE_SPEED, 10, YELLOW });
+		life.push_back(LifePickUp{ position, POWERUP_SPEED, 10, YELLOW });
 	}
 }
 
@@ -298,7 +310,7 @@ void WallBreaker::CollisionWithBricks()
 			SpawnLife(Vector2{ bricks[i].rect.x, bricks[i].rect.y });
 			int scenario = CollisionWithHitBox(bricks[i]);
 
-			Vector2 hitBoxesPositions[8];
+			Vector2 hitBoxesPositions[8]{};
 			for (int j = 0; j != end; j++)
 			{
 				hitBoxesPositions[j].x = bricks[i].hitBoxes[j].x;
@@ -308,71 +320,72 @@ void WallBreaker::CollisionWithBricks()
 			// delete the brick
 			bricks.erase(bricks.begin() + i);
 
-			switch (scenario)
-			{
-			case topLeftCorner:
-				if (ball.prevPosition.x < hitBoxesPositions[topLeftCorner].x)
+			if (!player.statusAffect.hasGoThrough)
+				switch (scenario)
 				{
-					ball.speed.x *= -1;
-				}
+				case topLeftCorner:
+					if (ball.prevPosition.x < hitBoxesPositions[topLeftCorner].x)
+					{
+						ball.speed.x *= -1;
+					}
 
-				if (ball.prevPosition.y < hitBoxesPositions[topLeftCorner].y)
+					if (ball.prevPosition.y < hitBoxesPositions[topLeftCorner].y)
+						ball.speed.y *= -1;
+
+					break;
+
+				case topRightCorner:
+					if (ball.prevPosition.x > hitBoxesPositions[topRightCorner].x)
+					{
+						ball.speed.x *= -1;
+					}
+
+					if (ball.prevPosition.y < hitBoxesPositions[topRightCorner].y)
+						ball.speed.y *= -1;
+
+					break;
+
+				case botLeftCorner:
+					if (ball.prevPosition.x < hitBoxesPositions[botLeftCorner].x)
+					{
+						ball.speed.x *= -1;
+					}
+
+					if (ball.prevPosition.y > hitBoxesPositions[botLeftCorner].y)
+						ball.speed.y *= -1;
+
+					break;
+
+				case botRightCorner:
+					if (ball.prevPosition.x > hitBoxesPositions[botRightCorner].x)
+					{
+						ball.speed.x *= -1;
+					}
+
+					if (ball.prevPosition.y > hitBoxesPositions[botRightCorner].y)
+						ball.speed.y *= -1;
+
+					break;
+
+				case top:
 					ball.speed.y *= -1;
+					break;
 
-				break;
-
-			case topRightCorner:
-				if (ball.prevPosition.x > hitBoxesPositions[topRightCorner].x)
-				{
-					ball.speed.x *= -1;
-				}
-
-				if (ball.prevPosition.y < hitBoxesPositions[topRightCorner].y)
+				case bottom:
 					ball.speed.y *= -1;
+					break;
 
-				break;
-
-			case botLeftCorner:
-				if (ball.prevPosition.x < hitBoxesPositions[botLeftCorner].x)
-				{
+				case left:
 					ball.speed.x *= -1;
-				}
+					break;
 
-				if (ball.prevPosition.y > hitBoxesPositions[botLeftCorner].y)
-					ball.speed.y *= -1;
-
-				break;
-
-			case botRightCorner:
-				if (ball.prevPosition.x > hitBoxesPositions[botRightCorner].x)
-				{
+				case right:
 					ball.speed.x *= -1;
+					break;
+
+				default:
+					break;
 				}
-
-				if (ball.prevPosition.y > hitBoxesPositions[botRightCorner].y)
-					ball.speed.y *= -1;
-
-				break;
-
-			case top:
-				ball.speed.y *= -1;
-				break;
-
-			case bottom:
-				ball.speed.y *= -1;
-				break;
-
-			case left:
-				ball.speed.x *= -1;
-				break;
-
-			case right:
-				ball.speed.x *= -1;
-				break;
-
-			default:
-				break;
-			}
 
 			break; // Because the ball might hit two bricks at the same frame		
 		}
@@ -411,7 +424,7 @@ void WallBreaker::CollisionWithLife()
 {
 	for (int i = 0; i < life.size(); i++)
 	{
-		if (CheckCollisionCircleRec(life[i].position,life[i].radius,player.GetRect()))
+		if (CheckCollisionCircleRec(life[i].position, life[i].radius, player.GetRect()))
 		{
 			life.erase(life.begin() + i);
 			// Max 5 lives
@@ -430,4 +443,3 @@ int WallBreaker::CollisionWithHitBox(Brick brick)
 		}
 	}
 }
-

@@ -2,8 +2,12 @@
 #include <vector>
 #include "raylib.h"
 
+#include <memory>
+
 #ifndef WALLBREAKER_H
 #define WALLBREAKER_H
+
+
 
 // C++ random library
 class WallBreaker
@@ -17,12 +21,21 @@ public:
 #define BRICK_HEIGHT 24
 #define DELTA_TIME GetFrameTime() * 50	// Multiplying by a number because the speed becomes too slow
 #define PLAYER_MOVEMENT_SPEED 5
-#define LIFE_SPEED Vector2{ 0, 3 * DELTA_TIME }
+#define POWERUP_SPEED Vector2{ 0, 3 * DELTA_TIME }
+
+	
+
+	typedef struct StatusAffect {
+		bool hasGoThrough = false;
+		int goThroughTimer = 5;
+		int goThroughTimerCounter = 0;
+	};
 
 	typedef struct Player {
 		Vector2 position; // it's the center
 		Vector2 size;
 		int curLife;
+		StatusAffect statusAffect;
 
 		Rectangle GetRect()
 		{
@@ -66,7 +79,7 @@ public:
 			}
 		}
 	} Brick;
-
+	
 	typedef struct LifePickUp {
 		Vector2 position;
 		Vector2 speed;
@@ -74,8 +87,18 @@ public:
 		Color color;
 
 		void Draw() { DrawCircle(position.x, position.y, radius, color); }
+
 	} LifePickUp;
 
+	typedef struct CheatPowerUp {
+		Vector2 position;
+		Vector2 speed;
+		int radius;
+		Color color;
+
+		void Draw() { DrawCircle(position.x, position.y, radius, color); }
+
+	} CheatPowerUp;
 
 	enum Box {
 		topLeftCorner,
@@ -93,6 +116,7 @@ public:
 
 	std::vector<Brick> bricks;
 	std::vector<LifePickUp> life;
+	
 
 	Player player = { 0 };
 	Ball ball = { 0 };
@@ -120,6 +144,8 @@ public:
 	void LifeMovement();
 	void PlayerMovement();
 	void BallMovement();
+
+	void TimerGoThrough();
 	void SpawnLife(Vector2 position);
 
 	void CollisionWithBricks();
@@ -127,9 +153,9 @@ public:
 	void CollisionWithWalls();
 	void CollisionWithLife();
 	int CollisionWithHitBox(Brick brick);
+
 	void EndScenario();
 	void Restart();
 };
-
 
 #endif // !WALLBREAKER_H
