@@ -74,10 +74,10 @@ public:
 		void Draw() { DrawRectangleRounded(rect, 0.3f, 8, color); }
 		void DrawHitBoxes()
 		{
-			for (int i = 0; i < 8; i++)
+			/*for (int i = 0; i < 8; i++)
 			{
 				DrawRectangleRec(hitBoxes[i], WHITE);
-			}
+			}*/
 		}
 	} Brick;
 	
@@ -111,10 +111,6 @@ public:
 		left,
 		right,
 		end
-	};
-
-	enum sound {
-
 	};
 
 	Color colors[ROWS_OF_BRICKS] = { RED, PURPLE, ORANGE, BLUE, GREEN };

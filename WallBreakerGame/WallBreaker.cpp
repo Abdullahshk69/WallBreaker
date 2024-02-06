@@ -63,6 +63,7 @@ void WallBreaker::Start()
 	// Clearing out old resources
 	lives.clear();
 	cheats.clear();
+	bricks.clear();
 
 	// Level Generation
 	LevelGeneration();
