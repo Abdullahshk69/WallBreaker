@@ -57,6 +57,8 @@ void WallBreaker::Main()
 
 void WallBreaker::Start()
 {
+	player.statusAffect.hasGoThrough = false;
+	player.statusAffect.goThroughTimerCounter = 0.0;
 	timerCounter = 0.0;
 	isBreakable = true;
 
@@ -185,6 +187,13 @@ void WallBreaker::DrawCurFrame()
 			else
 				DrawRectangle(10 + 40 * i, screenHeight - 20, 30, 10, GRAY);
 		}
+
+		if (player.statusAffect.hasGoThrough)
+		{
+			char buf[8];
+			sprintf_s(buf, "%d", int(player.statusAffect.goThroughTimer - player.statusAffect.goThroughTimerCounter + 1));
+			DrawText(buf, screenWidth - 100, screenHeight - 100, 12, BLUE);
+		}
 	}
 
 
@@ -296,6 +305,7 @@ void WallBreaker::Restart()
 	{
 		gameOver = false;
 		levelWon = false;
+		ball.active = false;
 
 		Start();
 
@@ -327,9 +337,6 @@ void WallBreaker::TimerCheatPowerUp()
 	{
 		player.statusAffect.goThroughTimerCounter += GetFrameTime();
 
-		char buf[8];
-		sprintf_s(buf, "%d", int(player.statusAffect.goThroughTimer - player.statusAffect.goThroughTimerCounter + 1));
-		DrawText(buf, screenWidth - 100, screenHeight - 100, 12, BLUE);
 		if (player.statusAffect.goThroughTimerCounter >= player.statusAffect.goThroughTimer)
 		{
 			player.statusAffect.hasGoThrough = false;
@@ -365,7 +372,7 @@ void WallBreaker::CollisionWithBricks()
 			if (isBreakable)
 			{
 				isBreakable = false;
-				SpawnPowerUp(Vector2{ bricks[i].rect.x, bricks[i].rect.y });
+				SpawnPowerUp(Vector2{ bricks[i].rect.x + brickSize.x/2, bricks[i].rect.y+brickSize.y/2 });
 				int scenario = CollisionWithHitBox(bricks[i]);
 
 				Vector2 hitBoxesPositions[8]{};
@@ -532,5 +539,5 @@ int WallBreaker::CollisionWithHitBox(Brick brick)
 		}
 	}
 	// Just returning this so that the scenario does not go into default
-	return botRightCorner;
+	return botLeftCorner;
 }
