@@ -27,7 +27,7 @@ public:
 
 	typedef struct StatusAffect {
 		bool hasGoThrough = false;
-		float goThroughTimer = 5.0;
+		const float goThroughTimer = 5.0;
 		float goThroughTimerCounter = 0.0;
 	};
 

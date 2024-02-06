@@ -71,6 +71,8 @@ void WallBreaker::Start()
 	player.position = Vector2{ screenWidth / 2, screenHeight * 9 / 10 };
 	player.size = Vector2{ screenWidth / 10 , 20 };
 	player.curLife = MAX_LIVES; // at the beginning
+	player.statusAffect.goThroughTimerCounter = 0.0;
+	player.statusAffect.hasGoThrough = false;
 
 	// Ball position declaration
 	ball.position = Vector2{ screenWidth / 2, screenHeight * 9 / 10 - 30 };
@@ -491,6 +493,7 @@ void WallBreaker::CollisionWithCheat()
 			cheats.erase(cheats.begin() + i);
 			// Max 5 lives
 			player.statusAffect.hasGoThrough = true;
+			player.statusAffect.goThroughTimerCounter = 0.0;
 		}
 		else if(cheats[i].position.y+cheats[i].radius >= screenHeight)
 			cheats.erase(cheats.begin() + i);
