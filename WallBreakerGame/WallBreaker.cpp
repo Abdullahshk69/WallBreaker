@@ -1,6 +1,5 @@
 #include "WallBreaker.h"
 #include "raylib.h"
-#include <iostream>
 
 /*
 This is our first serious attempt at creating a game using Raylib + C++.
