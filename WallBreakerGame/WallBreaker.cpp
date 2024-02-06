@@ -43,36 +43,42 @@ void WallBreaker::Main()
 	
 	InitWindow(screenWidth, screenHeight, "Wall Breaker");
 
+	InitAudioDevice();
+
 	Start();
 
 	SetTargetFPS(60); // This will become important
+
 	while (!WindowShouldClose())
 	{
 		Update();
 	}
+
+	CloseAudioDevice();
 	CloseWindow();
 }
 
 void WallBreaker::Start()
 {
-#pragma region BRICKS
-	LevelGeneration();
-#pragma endregion 
+	// Clearing out old resources
+	lives.clear();
+	cheats.clear();
 
-#pragma region PLAYER
+	// Level Generation
+	LevelGeneration();
+	
+	// Player declaration
 	player.position = Vector2{ screenWidth / 2, screenHeight * 9 / 10 };
 	player.size = Vector2{ screenWidth / 10 , 20 };
 	player.curLife = MAX_LIVES; // at the beginning
-#pragma endregion
 
-
+	// Ball position declaration
 	ball.position = Vector2{ screenWidth / 2, screenHeight * 9 / 10 - 30 };
 }
 
 void WallBreaker::EvalCurFrame()
 {
-
-	if (gameOver)
+	if (gameOver || levelWon)
 	{
 		Restart();
 
@@ -113,7 +119,7 @@ void WallBreaker::EvalCurFrame()
 	CollisionWithCheat();
 
 
-	// Timers
+	// Cheat power up timer
 	TimerCheatPowerUp();
 
 	// Check whether a player won or lost
@@ -284,6 +290,7 @@ void WallBreaker::Restart()
 	{
 		Start();
 		gameOver = false;
+		levelWon = false;
 	}
 }
 
