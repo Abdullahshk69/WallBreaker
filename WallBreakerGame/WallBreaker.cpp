@@ -1,5 +1,6 @@
 #include "WallBreaker.h"
 #include "raylib.h"
+#include <iostream>
 
 /*
 This is our first serious attempt at creating a game using Raylib + C++.
@@ -39,10 +40,8 @@ Collecting them by the player, will activate the reward.
 
 void WallBreaker::Main()
 {
-	
-	InitWindow(screenWidth, screenHeight, "Wall Breaker");
 
-	InitAudioDevice();
+	InitWindow(screenWidth, screenHeight, "Wall Breaker");
 
 	Start();
 
@@ -53,19 +52,21 @@ void WallBreaker::Main()
 		Update();
 	}
 
-	CloseAudioDevice();
 	CloseWindow();
 }
 
 void WallBreaker::Start()
 {
+	timerCounter = 0.0;
+	isBreakable = true;
+
 	// Clearing out old resources
 	lives.clear();
 	cheats.clear();
 
 	// Level Generation
 	LevelGeneration();
-	
+
 	// Player declaration
 	player.position = Vector2{ screenWidth / 2, screenHeight * 9 / 10 };
 	player.size = Vector2{ screenWidth / 10 , 20 };
@@ -122,6 +123,9 @@ void WallBreaker::EvalCurFrame()
 
 	// Cheat power up timer
 	TimerCheatPowerUp();
+
+	// Brick timer
+	TimerBrick();
 
 	// Check whether a player won or lost
 	EndScenario();
@@ -206,7 +210,7 @@ void WallBreaker::LevelGeneration()
 	{
 		for (int col = 0; col < BRICKS_PER_ROW; col++)
 		{
-			if (rand() % 100 > 50)
+			if (rand() % 100 > row * 15)
 			{
 				float x = GAP + (GAP + brickSize.x) * col;
 				float y = GAP + (GAP + brickSize.y) * row;
@@ -227,8 +231,8 @@ void WallBreaker::LevelGeneration()
 
 				// Leaving a gap in between 
 
-				brick.hitBoxes[top] = Rectangle{ x + brickSize.x / 9 , y - (brickSize.y / 9),  brickSize.x - float(brickSize.x / 4.5),  1 };
-				brick.hitBoxes[bottom] = Rectangle{ x + brickSize.x / 9, y + brickSize.y + (brickSize.y / 9),  brickSize.x - float(brickSize.x / 4.5),  1 };
+				brick.hitBoxes[top] = Rectangle{ x + brickSize.x / 9 , y ,  brickSize.x - float(brickSize.x / 4.5),  1 };
+				brick.hitBoxes[bottom] = Rectangle{ x + brickSize.x / 9, y + brickSize.y,  brickSize.x - float(brickSize.x / 4.5),  1 };
 				brick.hitBoxes[left] = Rectangle{ x , y + (brickSize.y / 9), 1, brickSize.y - float(brickSize.y / 4.5) };
 				brick.hitBoxes[right] = Rectangle{ x + brickSize.x , y + (brickSize.y / 9), 1, brickSize.y - float(brickSize.y / 4.5) };
 
@@ -289,9 +293,11 @@ void WallBreaker::Restart()
 {
 	if (IsKeyPressed(KEY_ENTER))
 	{
-		Start();
 		gameOver = false;
 		levelWon = false;
+
+		Start();
+
 	}
 }
 
@@ -335,7 +341,7 @@ void WallBreaker::SpawnPowerUp(Vector2 position)
 {
 	if (rand() % 100 > 75)
 		SpawnLife(position);
-	else if (rand() % 100 < 75)
+	else if (rand() % 100 > 75)
 		SpawnCheat(position);
 }
 
@@ -355,90 +361,106 @@ void WallBreaker::CollisionWithBricks()
 	{
 		if (CheckCollisionCircleRec(ball.position, ball.radius, bricks[i].rect))
 		{
-			SpawnPowerUp(Vector2{ bricks[i].rect.x, bricks[i].rect.y });
-			int scenario = CollisionWithHitBox(bricks[i]);
-
-			Vector2 hitBoxesPositions[8]{};
-			for (int j = 0; j != end; j++)
+			if (isBreakable)
 			{
-				hitBoxesPositions[j].x = bricks[i].hitBoxes[j].x;
-				hitBoxesPositions[j].y = bricks[i].hitBoxes[j].y;
-			}
+				isBreakable = false;
+				SpawnPowerUp(Vector2{ bricks[i].rect.x, bricks[i].rect.y });
+				int scenario = CollisionWithHitBox(bricks[i]);
 
-			// delete the brick
-			bricks.erase(bricks.begin() + i);
-
-			if (!player.statusAffect.hasGoThrough)
-				switch (scenario)
+				Vector2 hitBoxesPositions[8]{};
+				for (int j = 0; j != end; j++)
 				{
-				case topLeftCorner:
-					if (ball.prevPosition.x < hitBoxesPositions[topLeftCorner].x)
-					{
-						ball.speed.x *= -1;
-					}
-
-					if (ball.prevPosition.y < hitBoxesPositions[topLeftCorner].y)
-						ball.speed.y *= -1;
-
-					break;
-
-				case topRightCorner:
-					if (ball.prevPosition.x > hitBoxesPositions[topRightCorner].x + (brickSize.x/ 10))
-					{
-						ball.speed.x *= -1;
-					}
-
-					if (ball.prevPosition.y < hitBoxesPositions[topRightCorner].y)
-						ball.speed.y *= -1;
-
-					break;
-
-				case botLeftCorner:
-					if (ball.prevPosition.x < hitBoxesPositions[botLeftCorner].x)
-					{
-						ball.speed.x *= -1;
-					}
-
-					if (ball.prevPosition.y > hitBoxesPositions[botLeftCorner].y + (brickSize.y/10))
-						ball.speed.y *= -1;
-
-					break;
-
-				case botRightCorner:
-					if (ball.prevPosition.x > hitBoxesPositions[botRightCorner].x + (brickSize.x/10))
-					{
-						ball.speed.x *= -1;
-					}
-
-					if (ball.prevPosition.y > hitBoxesPositions[botRightCorner].y + (brickSize.y / 10))
-						ball.speed.y *= -1;
-
-					break;
-
-				case top:
-					ball.speed.y *= -1;
-					break;
-
-				case bottom:
-					ball.speed.y *= -1;
-					break;
-
-				case left:
-					ball.speed.x *= -1;
-					break;
-
-				case right:
-					ball.speed.x *= -1;
-					break;
-
-				default:
-					break;
+					hitBoxesPositions[j].x = bricks[i].hitBoxes[j].x;
+					hitBoxesPositions[j].y = bricks[i].hitBoxes[j].y;
 				}
 
-			break; // Because the ball might hit two bricks at the same frame		
+				// delete the brick
+				bricks.erase(bricks.begin() + i);
+
+				if (!player.statusAffect.hasGoThrough)
+					switch (scenario)
+					{
+					case topLeftCorner:
+						if (ball.prevPosition.x < hitBoxesPositions[topLeftCorner].x)
+						{
+							ball.speed.x *= -1;
+						}
+
+						if (ball.prevPosition.y < hitBoxesPositions[topLeftCorner].y)
+							ball.speed.y *= -1;
+
+						break;
+
+					case topRightCorner:
+						if (ball.prevPosition.x > hitBoxesPositions[topRightCorner].x + (brickSize.x / 10))
+						{
+							ball.speed.x *= -1;
+						}
+
+						if (ball.prevPosition.y < hitBoxesPositions[topRightCorner].y)
+							ball.speed.y *= -1;
+
+						break;
+
+					case botLeftCorner:
+						if (ball.prevPosition.x < hitBoxesPositions[botLeftCorner].x)
+						{
+							ball.speed.x *= -1;
+						}
+
+						if (ball.prevPosition.y > hitBoxesPositions[botLeftCorner].y + (brickSize.y / 10))
+							ball.speed.y *= -1;
+
+						break;
+
+					case botRightCorner:
+						if (ball.prevPosition.x > hitBoxesPositions[botRightCorner].x + (brickSize.x / 10))
+						{
+							ball.speed.x *= -1;
+						}
+
+						if (ball.prevPosition.y > hitBoxesPositions[botRightCorner].y + (brickSize.y / 10))
+							ball.speed.y *= -1;
+
+						break;
+
+					case top:
+						ball.speed.y *= -1;
+						break;
+
+					case bottom:
+						ball.speed.y *= -1;
+						break;
+
+					case left:
+						ball.speed.x *= -1;
+						break;
+
+					case right:
+						ball.speed.x *= -1;
+						break;
+
+					default:
+						break;
+					}
+
+				break; // Because the ball might hit two bricks at the same frame		
+			}
+
 		}
+	}
+}
 
-
+void WallBreaker::TimerBrick()
+{
+	if (!isBreakable)
+	{
+		timerCounter += GetFrameTime();
+		if (timerCounter >= timer)
+		{
+			isBreakable = true;
+			timerCounter = 0.0;
+		}
 	}
 }
 
@@ -494,7 +516,7 @@ void WallBreaker::CollisionWithCheat()
 			player.statusAffect.hasGoThrough = true;
 			player.statusAffect.goThroughTimerCounter = 0.0;
 		}
-		else if(cheats[i].position.y+cheats[i].radius >= screenHeight)
+		else if (cheats[i].position.y + cheats[i].radius >= screenHeight)
 			cheats.erase(cheats.begin() + i);
 	}
 }
@@ -508,4 +530,6 @@ int WallBreaker::CollisionWithHitBox(Brick brick)
 			return i;
 		}
 	}
+	// Just returning this so that the scenario does not go into default
+	return botRightCorner;
 }

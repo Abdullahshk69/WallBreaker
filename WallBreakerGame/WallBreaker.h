@@ -47,7 +47,7 @@ public:
 
 		void Draw()
 		{
-			DrawRectangleRounded(GetRect(), 0.3, 8, DARKGREEN);
+			DrawRectangleRounded(GetRect(), 0.3f, 8, DARKGREEN);
 		}
 
 	} Player;
@@ -70,6 +70,7 @@ public:
 		Color color;
 		Rectangle rect;
 		Rectangle hitBoxes[8];
+		
 		void Draw() { DrawRectangleRounded(rect, 0.3f, 8, color); }
 		void DrawHitBoxes()
 		{
@@ -112,6 +113,10 @@ public:
 		end
 	};
 
+	enum sound {
+
+	};
+
 	Color colors[ROWS_OF_BRICKS] = { RED, PURPLE, ORANGE, BLUE, GREEN };
 
 	std::vector<Brick> bricks;
@@ -128,6 +133,9 @@ public:
 	bool gameOver = false;
 	bool levelWon = false;
 
+	float timer = 0.05;
+	float timerCounter = 0.0;
+	bool isBreakable = true;
 
 	static const int screenWidth = 800;
 	static const int screenHeight = 450;
@@ -150,10 +158,13 @@ public:
 	void CheatMovement();
 
 	// PowerUps
-	void TimerCheatPowerUp();
 	void SpawnPowerUp(Vector2 position);
 	void SpawnLife(Vector2 position);
 	void SpawnCheat(Vector2 position);
+
+	// Timers
+	void TimerCheatPowerUp();
+	void TimerBrick();
 
 	// Collisions
 	void CollisionWithBricks();
